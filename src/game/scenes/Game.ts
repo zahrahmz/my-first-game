@@ -6,13 +6,15 @@ export class Game extends Scene {
   platforms: Phaser.Physics.Arcade.StaticGroup;
   stars: Phaser.Physics.Arcade.Group;
   bombs: Phaser.Physics.Arcade.Group;
-  player:Phaser.Physics.Arcade.Sprite;
-  cursors:Phaser.Input.Keyboard.Key;
-  scoreText:Phaser.GameObjects.Text;
-  levelText:Phaser.GameObjects.Text;
+  player: Phaser.Physics.Arcade.Sprite;
+  cursors: Phaser.Input.Keyboard.Key;
+  scoreText: Phaser.GameObjects.Text;
+  levelText: Phaser.GameObjects.Text;
   gameOver: boolean = false;
   score: number = 0;
   level: number = 1;
+  healthIndicator: Phaser.GameObjects.Group;
+  currentHealth: number = 3;
   
   constructor() {
     super('Game');
@@ -20,27 +22,25 @@ export class Game extends Scene {
   
   create() {
     this.background = this.add.image(400, 300, 'sky');
-  
-    console.log(this);
-  
+    
     this.platforms = this.physics.add.staticGroup();
-  
+    
     //  Here we create the ground.
     //  Scale it to fit the width of the game (the original sprite is 400x32 in size)
     this.platforms.create(400, 568, 'ground').setScale(2).refreshBody();
-  
+    
     //  Now let's create some ledges
     this.platforms.create(600, 400, 'ground');
     this.platforms.create(50, 250, 'ground');
     this.platforms.create(750, 220, 'ground');
-  
+    
     // The player and its settings
     this.player = this.physics.add.sprite(100, 450, 'dude');
-  
+    
     //  Player physics properties. Give the little guy a slight bounce.
     this.player.setBounce(0.2);
     this.player.setCollideWorldBounds(true);
-  
+    
     //  Our player animations, turning, walking left and walking right.
     this.anims.create({
       key: 'left',
@@ -48,51 +48,52 @@ export class Game extends Scene {
       frameRate: 10,
       repeat: -1
     });
-  
+    
     this.anims.create({
       key: 'turn',
       frames: [{key: 'dude', frame: 4}],
       frameRate: 20
     });
-  
+    
     this.anims.create({
       key: 'right',
       frames: this.anims.generateFrameNumbers('dude', {start: 5, end: 8}),
       frameRate: 10,
       repeat: -1
     });
-  
+    
     //  Input Events
     this.cursors = this.input.keyboard.createCursorKeys();
-  
+    
     //  Some stars to collect, 12 in total, evenly spaced 70 pixels apart along the x axis
     this.stars = this.physics.add.group({
       key: 'star',
       repeat: 11,
       setXY: {x: 12, y: 0, stepX: 70}
     });
-  
-    this.stars.children.iterate(function (child) {
     
+    this.stars.children.iterate(function (child) {
+      
       //  Give each star a slightly different bounce
       child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
-    
+      
     });
-  
+    
     this.bombs = this.physics.add.group();
-  
-    //  The score
+    
+    this.healthIndicator = this.add.group({key: 'fullHeart', repeat: 2, setXY: {x: 640, y: 16, stepX: 50}, setOrigin:{x:0, y:0}});
+    
     this.scoreText = this.add.text(16, 16, 'Score: 0', {fontSize: '32px', fill: '#000'});
     this.levelText = this.add.text(16, 48, 'Level: 1', {fontSize: '32px', fill: '#000'});
-  
+    
     //  Collide the player and the stars with the platforms
     this.physics.add.collider(this.player, this.platforms);
     this.physics.add.collider(this.stars, this.platforms);
     this.physics.add.collider(this.bombs, this.platforms);
-  
+    
     //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
     this.physics.add.overlap(this.player, this.stars, this.collectStar, null, this);
-  
+    
     this.physics.add.collider(this.player, this.bombs, this.hitBomb, null, this);
   }
   
@@ -155,7 +156,22 @@ export class Game extends Scene {
     player.setTint(0xff0000);
     
     player.anims.play('turn');
+    
+   const timeout = setTimeout(()=>{
+     if (this.currentHealth === 0){
+       clearTimeout(timeout);
+       this.scene.start('GameOver');
+     }
+     
+      this.physics.resume();
+      player.clearTint();
+    }, 300)
   
-    this.scene.start('GameOver');
+    this.currentHealth -= 1;
+    this.healthIndicator.children.iterate( (child, index)=> {
+      if (index >  this.currentHealth -1) {
+        child.setTint(0x000000)
+      }
+    })
   }
 }
