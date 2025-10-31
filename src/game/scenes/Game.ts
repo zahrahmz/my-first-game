@@ -9,8 +9,10 @@ export class Game extends Scene {
   player:Phaser.Physics.Arcade.Sprite;
   cursors:Phaser.Input.Keyboard.Key;
   scoreText:Phaser.GameObjects.Text;
+  levelText:Phaser.GameObjects.Text;
   gameOver: boolean = false;
   score: number = 0;
+  level: number = 1;
   
   constructor() {
     super('Game');
@@ -81,6 +83,7 @@ export class Game extends Scene {
   
     //  The score
     this.scoreText = this.add.text(16, 16, 'Score: 0', {fontSize: '32px', fill: '#000'});
+    this.levelText = this.add.text(16, 48, 'Level: 1', {fontSize: '32px', fill: '#000'});
   
     //  Collide the player and the stars with the platforms
     this.physics.add.collider(this.player, this.platforms);
@@ -125,6 +128,9 @@ export class Game extends Scene {
     this.scoreText.setText('Score: ' + this.score);
     
     if (this.stars.countActive(true) === 0) {
+      this.level += 1;
+      this.levelText.setText('Level: ' + this.level);
+      
       //  A new batch of stars to collect
       this.stars.children.iterate(function (child) {
         
